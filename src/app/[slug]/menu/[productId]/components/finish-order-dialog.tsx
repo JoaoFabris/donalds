@@ -32,9 +32,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { isValidCpf } from "@/helpers/cpf";
 
+import { createOrder } from "../../actions/create-order";
+import { createStripeCheckout } from "../../actions/create-stripe-checkout";
 import { CartContext } from "../../contexts/cart";
-import { createOrder } from "../actions/create-order";
-import { createStripeCheckout } from "../actions/create-stripe-checkout";
+
 
 
 const formSchema = z.object({
