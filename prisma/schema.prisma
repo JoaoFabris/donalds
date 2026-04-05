@@ -10,7 +10,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
+
 model Restaurant {
   id             String         @id @default(uuid())
   name           String
@@ -59,6 +61,8 @@ model Order {
   restaurant        Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId      String
   orderProducts     OrderProduct[]
+  customerName      String
+  customerCpf       String
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 }
@@ -78,6 +82,8 @@ model OrderProduct {
 enum OrderStatus {
   PENDING
   IN_PREPARATION
+  PAYMENT_CONFIRMED
+  PAYMENT_FAILED
   FINISHED
 }
 
