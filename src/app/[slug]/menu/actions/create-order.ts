@@ -64,3 +64,9 @@ export const createOrder = async (input: CreateOrderInput) => {
   // );
   return order;
 };
+
+//O revalidatePath do Next.js serve para invalidar o cache de uma rota específica e forçar o Next a buscar dados atualizados na próxima requisição.
+
+// O Next.js (principalmente com App Router) usa cache automático para melhorar performance. Isso significa que páginas podem ficar “congeladas” com dados antigos.
+
+// “Essa página (/slug/orders) mudou — pode descartar o cache e gerar ela de novo com dados atualizados.”
