@@ -4,49 +4,31 @@ import { ConsumptionMethod } from "@prisma/client";
 import { headers } from "next/headers";
 import Stripe from "stripe";
 
-import { removeCpfPunctuation } from "@/helpers/cpf";
-import { db } from "@/lib/prisma";
-
 import { CartProduct } from "../contexts/cart";
-
-
-interface CreateStripeCheckoutInput {
-  products: CartProduct[];
-  orderId: number;
-  slug: string;
-  consumptionMethod: ConsumptionMethod;
-  cpf: string;
-}
 
 export const createStripeCheckout = async ({
   orderId,
-  products,
   slug,
   consumptionMethod,
-  cpf,
-}: CreateStripeCheckoutInput) => {
+  products,
+}: {
+  orderId: number;
+  slug: string;
+  consumptionMethod: ConsumptionMethod;
+  products: CartProduct[];
+}) => {
+  const origin = (await headers()).get("origin") || "";
   if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error("Missing Stripe secret key");
+    throw new Error("Stripe secret key not found");
   }
-  const origin = (await headers()).get("origin") as string;
-  const productsWithPrices = await db.product.findMany({
-    where: {
-      id: {
-        in: products.map((product) => product.id),
-      },
-    },
-  });
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-02-24.acacia",
   });
-  const searchParams = new URLSearchParams();
-  searchParams.set("consumptionMethod", consumptionMethod);
-  searchParams.set("cpf", removeCpfPunctuation(cpf));
   const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
+    payment_method_types: ["card", "boleto"],
     mode: "payment",
-    success_url: `${origin}/${slug}/orders?${searchParams.toString()}`,
-    cancel_url: `${origin}/${slug}/orders?${searchParams.toString()}`,
+    success_url: `${origin}/${slug}?consumptionMethod=${consumptionMethod}`,
+    cancel_url: `${origin}/${slug}?consumptionMethod=${consumptionMethod}`,
     metadata: {
       orderId,
     },
@@ -57,8 +39,7 @@ export const createStripeCheckout = async ({
           name: product.name,
           images: [product.imageUrl],
         },
-        unit_amount:
-          productsWithPrices.find((p) => p.id === product.id)!.price * 100,
+        unit_amount: product.price * 100,
       },
       quantity: product.quantity,
     })),
