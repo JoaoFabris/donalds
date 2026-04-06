@@ -3,7 +3,7 @@
 import { OrderStatus, Prisma } from "@prisma/client";
 import { ChevronLeftIcon, ScrollTextIcon } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,7 +29,6 @@ interface OrderListProps {
     }>
   >;
 }
-
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; bgColor: string }> =
   {
@@ -65,7 +64,12 @@ const getStatusColor = (status: OrderStatus): string => {
 
 const OrderList = ({ orders }: OrderListProps) => {
   const router = useRouter();
-  const handleBackClick = () => router.back();
+  const { slug } = useParams<{ slug: string }>();
+
+
+  const handleBackClick = () => {
+    router.push(`/${slug}/menu`);
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -88,7 +92,6 @@ const OrderList = ({ orders }: OrderListProps) => {
         orders.map((order) => (
           <Card key={order.id}>
             <CardContent className="space-y-4 p-5">
-              {/* ✅ STATUS BADGE COM CORES CORRETAS */}
               <div
                 className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
                   order.status,
@@ -97,7 +100,6 @@ const OrderList = ({ orders }: OrderListProps) => {
                 {getStatusLabel(order.status)}
               </div>
 
-              {/* RESTAURANT INFO */}
               <div className="flex items-center gap-2">
                 <div className="relative h-5 w-5">
                   <Image
@@ -112,7 +114,6 @@ const OrderList = ({ orders }: OrderListProps) => {
 
               <Separator />
 
-              {/* ORDER ITEMS */}
               <div className="space-y-2">
                 {order.orderProducts.map((orderProduct) => (
                   <div key={orderProduct.id} className="flex items-center gap-2">
@@ -126,7 +127,6 @@ const OrderList = ({ orders }: OrderListProps) => {
 
               <Separator />
 
-              {/* TOTAL */}
               <p className="text-sm font-medium">{formatCurrency(order.total)}</p>
             </CardContent>
           </Card>
