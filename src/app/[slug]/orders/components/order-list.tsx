@@ -1,7 +1,7 @@
 "use client";
 
 import { OrderStatus, Prisma } from "@prisma/client";
-import { ChevronLeftIcon, ScrollTextIcon } from "lucide-react";
+import { CheckCircle2Icon,ChevronLeftIcon, ScrollTextIcon } from "lucide-react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 
@@ -62,10 +62,14 @@ const getStatusColor = (status: OrderStatus): string => {
   return STATUS_CONFIG[status]?.bgColor || "bg-gray-200 text-gray-700";
 };
 
+// ✅ FUNÇÃO PARA VERIFICAR SE PEDIDO FOI PAGO
+const isPaid = (status: OrderStatus): boolean => {
+  return ["IN_PREPARATION", "READY_FOR_PICKUP", "COMPLETED"].includes(status);
+};
+
 const OrderList = ({ orders }: OrderListProps) => {
   const router = useRouter();
   const { slug } = useParams<{ slug: string }>();
-
 
   const handleBackClick = () => {
     router.push(`/${slug}/menu`);
@@ -92,14 +96,26 @@ const OrderList = ({ orders }: OrderListProps) => {
         orders.map((order) => (
           <Card key={order.id}>
             <CardContent className="space-y-4 p-5">
-              <div
-                className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
-                  order.status,
-                )}`}
-              >
-                {getStatusLabel(order.status)}
+              {/* ✅ BADGES: STATUS + PAGAMENTO */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div
+                  className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
+                    order.status,
+                  )}`}
+                >
+                  {getStatusLabel(order.status)}
+                </div>
+
+                {/* ✅ BADGE DE PAGAMENTO */}
+                {isPaid(order.status) && (
+                  <div className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    <CheckCircle2Icon size={14} />
+                    Pago
+                  </div>
+                )}
               </div>
 
+              {/* RESTAURANT INFO */}
               <div className="flex items-center gap-2">
                 <div className="relative h-5 w-5">
                   <Image
@@ -114,6 +130,7 @@ const OrderList = ({ orders }: OrderListProps) => {
 
               <Separator />
 
+              {/* ORDER ITEMS */}
               <div className="space-y-2">
                 {order.orderProducts.map((orderProduct) => (
                   <div key={orderProduct.id} className="flex items-center gap-2">
@@ -127,6 +144,7 @@ const OrderList = ({ orders }: OrderListProps) => {
 
               <Separator />
 
+              {/* TOTAL */}
               <p className="text-sm font-medium">{formatCurrency(order.total)}</p>
             </CardContent>
           </Card>
