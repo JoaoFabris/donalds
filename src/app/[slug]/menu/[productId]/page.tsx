@@ -7,10 +7,12 @@ import ProductHeader from "./components/product-header";
 
 interface ProductPageProps {
   params: Promise<{ slug: string; productId: string }>;
+  searchParams: Promise<{ consumptionMethod: string }>;
 }
 
-const ProductPage = async ({ params }: ProductPageProps) => {
+const ProductPage = async ({ params, searchParams  }: ProductPageProps) => {
   const { slug, productId } = await params;
+  const { consumptionMethod } = await searchParams;
   const product = await db.product.findUnique({
     where: { id: productId },
     include: {
@@ -31,7 +33,7 @@ const ProductPage = async ({ params }: ProductPageProps) => {
   }
   return (
     <div className="flex h-full flex-col">
-      <ProductHeader product={product} />
+          <ProductHeader product={product} consumptionMethod={consumptionMethod} />
       <ProductDetails product={product} />
     </div>
   );

@@ -10,10 +10,12 @@ interface RestaurantMenuPageProps {
   searchParams: Promise<{ consumptionMethod: string }>;
 }
 
-const isConsumptionMethodValid = (consumptionMethod: string) => {
+const isConsumptionMethodValid = (consumptionMethod: unknown): boolean => {
+  if (typeof consumptionMethod !== "string") {
+    return false;
+  }
   return ["DINE_IN", "TAKEAWAY"].includes(consumptionMethod.toUpperCase());
 };
-
 const RestaurantMenuPage = async ({
   params,
   searchParams,
@@ -36,7 +38,7 @@ const RestaurantMenuPage = async ({
   }
   return (
     <div>
-      <RestaurantHeader restaurant={restaurant} />
+      <RestaurantHeader restaurant={restaurant} consumptionMethod={consumptionMethod}/>
       <RestaurantCategories restaurant={restaurant} />
     </div>
   );
@@ -44,4 +46,3 @@ const RestaurantMenuPage = async ({
 
 export default RestaurantMenuPage;
 
-// http://localhost:3000/fsw-donalds/menu?consumptionMethod=dine_in

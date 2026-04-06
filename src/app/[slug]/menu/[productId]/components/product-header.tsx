@@ -9,13 +9,15 @@ import { Button } from "@/components/ui/button";
 
 interface ProductHeaderProps {
   product: Pick<Product, "name" | "imageUrl">;
+   consumptionMethod: string;
 }
 
-const ProductHeader = ({ product }: ProductHeaderProps) => {
+const ProductHeader = ({ product, consumptionMethod  }: ProductHeaderProps) => {
+  console.log("consumptionMethod:", consumptionMethod);
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
-  const handleBackClick = () => router.back();
-  const handleOrdersClick = () => router.push(`/${slug}/orders`);
+  const handleBackClick = () => router.push(`/${slug}/menu?consumptionMethod=${consumptionMethod}`);
+  const handleOrdersClick = () => router.push(`/${slug}/orders?consumptionMethod=${consumptionMethod}`);
   return (
     <div className="relative min-h-[300px] w-full">
       <Button

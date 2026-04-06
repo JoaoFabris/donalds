@@ -28,6 +28,7 @@ interface OrderListProps {
       };
     }>
   >;
+  consumptionMethod: string;
 }
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; bgColor: string }> =
@@ -67,12 +68,12 @@ const isPaid = (status: OrderStatus): boolean => {
   return ["IN_PREPARATION", "READY_FOR_PICKUP", "COMPLETED"].includes(status);
 };
 
-const OrderList = ({ orders }: OrderListProps) => {
+const OrderList = ({ orders, consumptionMethod  }: OrderListProps) => {
   const router = useRouter();
   const { slug } = useParams<{ slug: string }>();
 
   const handleBackClick = () => {
-    router.push(`/${slug}/menu`);
+    router.push(`/${slug}/menu?consumptionMethod=${consumptionMethod}`);
   };
 
   return (

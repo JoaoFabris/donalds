@@ -8,11 +8,11 @@ import OrderList from "./components/order-list";
 
 
 interface OrdersPageProps {
-  searchParams: Promise<{ cpf: string }>;
+  searchParams: Promise<{ cpf: string; consumptionMethod: string }>;
 }
 
 const OrdersPage = async ({ searchParams }: OrdersPageProps) => {
-  const { cpf } = await searchParams;
+  const { cpf, consumptionMethod } = await searchParams;
   if (!cpf) {
     return <CpfForm />;
   }
@@ -40,7 +40,7 @@ const OrdersPage = async ({ searchParams }: OrdersPageProps) => {
       },
     },
   });
-  return <OrderList orders={orders} />;
+  return <OrderList orders={orders} consumptionMethod={consumptionMethod} />;
 };
 
 export default OrdersPage;
