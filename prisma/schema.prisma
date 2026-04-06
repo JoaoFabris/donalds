@@ -67,12 +67,7 @@ model Order {
   orderProducts     OrderProduct[]
   customerName      String
   customerCpf       String
-  
-  // 🔑 Campos Stripe para integração de pagamento
   stripeSessionId   String?           @unique
-  stripePaymentId   String?           @unique
-  paymentIntents    PaymentIntent[]
-  
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -89,7 +84,7 @@ model OrderProduct {
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId   Int
   quantity  Int
-  price     Float    // Preço no momento da compra (snapshot)
+  price     Float
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -97,45 +92,12 @@ model OrderProduct {
   @@index([productId])
 }
 
-// 🆕 Modelo para rastrear tentativas de pagamento
-model PaymentIntent {
-  id                String   @id @default(uuid())
-  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId           Int
-  stripePaymentId   String   @unique
-  amount            Float    // Valor em reais
-  currency          String   @default("BRL")
-  status            PaymentStatus
-  failureReason     String?  // Motivo da falha, se houver
-  failureCode       String?  // Código de erro do Stripe
-  attemptNumber     Int      @default(1)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@index([orderId])
-  @@index([stripePaymentId])
-  @@index([status])
-  @@index([createdAt])
-}
-
 enum OrderStatus {
-  PENDING             
-  PAYMENT_PROCESSING   // Stripe processando
-  PAYMENT_CONFIRMED    // Pagamento aprovado
-  PAYMENT_FAILED       // Pagamento rejeitado
-  IN_PREPARATION       // Na cozinha
-  READY_FOR_PICKUP     // Pronto para retirada (TAKEAWAY)
-  SERVED               // Entregue ao cliente (DINE_IN)
-  CANCELLED            // Cancelado pelo cliente
-  REFUNDED 
-}
-
-enum PaymentStatus {
-  PENDING              // Aguardando resposta do Stripe
-  SUCCEEDED            // Pagamento bem-sucedido
-  FAILED               // Pagamento falhou
-  CANCELLED            // Pagamento cancelado
-  EXPIRED              // Sessão expirou
+  PENDING          // Aguardando pagamento
+  IN_PREPARATION   // Pagamento confirmado, na cozinha
+  READY_FOR_PICKUP // Pronto para retirada
+  COMPLETED        // Entregue ao cliente
+  CANCELLED        // Cancelado
 }
 
 enum ConsumptionMethod {

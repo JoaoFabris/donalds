@@ -1,3 +1,5 @@
+// src/app/api/webhooks/stripe/route.ts
+
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -7,12 +9,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-02-24.acacia",
 });
 
-// ─── Handlers de eventos ────────────────────────────────────────────────────
+// ─── Handlers ───────────────────────────────────────────────────────────────
 
 async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
 ): Promise<void> {
-  // Validar metadata
   if (!session.metadata?.orderId) {
     console.error("[Stripe Webhook] Missing orderId in metadata");
     return;
@@ -20,17 +21,13 @@ async function handleCheckoutCompleted(
 
   const orderId = Number(session.metadata.orderId);
   if (isNaN(orderId) || orderId <= 0) {
-    console.error(
-      "[Stripe Webhook] Invalid orderId:",
-      session.metadata.orderId,
-    );
+    console.error("[Stripe Webhook] Invalid orderId:", session.metadata.orderId);
     return;
   }
 
-  // Buscar pedido
   const order = await db.order.findUnique({
     where: { id: orderId },
-    select: { id: true, status: true, stripeSessionId: true },
+    select: { id: true, stripeSessionId: true },
   });
 
   if (!order) {
@@ -38,15 +35,12 @@ async function handleCheckoutCompleted(
     return;
   }
 
-  // Idempotência por session ID — evita reprocessar mesmo evento
+  // Idempotência — ignora se essa sessão já foi processada
   if (order.stripeSessionId === session.id) {
-    console.log(
-      `[Stripe Webhook] Order ${orderId} already processed for session ${session.id}`,
-    );
+    console.log(`[Stripe Webhook] Order ${orderId} already processed`);
     return;
   }
 
-  // Atualizar status e salvar session ID para idempotência futura
   await db.order.update({
     where: { id: orderId },
     data: {
@@ -55,7 +49,7 @@ async function handleCheckoutCompleted(
     },
   });
 
-  console.log(`[Stripe Webhook] Order ${orderId} updated to IN_PREPARATION`);
+  console.log(`[Stripe Webhook] Order ${orderId} → IN_PREPARATION`);
 }
 
 async function handleCheckoutExpired(
@@ -71,7 +65,6 @@ async function handleCheckoutExpired(
     select: { id: true, status: true },
   });
 
-  // Só cancelar se ainda estiver pendente
   if (!order || order.status !== "PENDING") return;
 
   await db.order.update({
@@ -79,28 +72,7 @@ async function handleCheckoutExpired(
     data: { status: "CANCELLED" },
   });
 
-  console.log(`[Stripe Webhook] Order ${orderId} cancelled (session expired)`);
-}
-
-async function handlePaymentFailed(
-  paymentIntent: Stripe.PaymentIntent,
-): Promise<void> {
-  const orderId = Number(paymentIntent.metadata?.orderId);
-  if (isNaN(orderId) || orderId <= 0) return;
-
-  const order = await db.order.findUnique({
-    where: { id: orderId },
-    select: { id: true, status: true },
-  });
-
-  if (!order || order.status !== "PENDING") return;
-
-  await db.order.update({
-    where: { id: orderId },
-    data: { status: "PAYMENT_FAILED" },
-  });
-
-  console.log(`[Stripe Webhook] Order ${orderId} marked as PAYMENT_FAILED`);
+  console.log(`[Stripe Webhook] Order ${orderId} → CANCELLED (session expired)`);
 }
 
 // ─── Handler principal ───────────────────────────────────────────────────────
@@ -123,7 +95,6 @@ export const POST = async (request: Request) => {
       process.env.STRIPE_WEBHOOK_SECRET_KEY!,
     );
   } catch (error) {
-    // Assinatura inválida — não fazer retry
     if (error instanceof Stripe.errors.StripeSignatureVerificationError) {
       console.error("[Stripe Webhook] Invalid signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
@@ -147,26 +118,13 @@ export const POST = async (request: Request) => {
         );
         break;
 
-      case "payment_intent.payment_failed":
-        await handlePaymentFailed(
-          event.data.object as Stripe.PaymentIntent,
-        );
-        break;
-
       default:
-        console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+        console.log(`[Stripe Webhook] Unhandled event: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    // Erro de negócio/DB — retorna 500 para o Stripe tentar novamente
-    console.error(
-      `[Stripe Webhook] Error handling event ${event.type}:`,
-      error,
-    );
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    console.error(`[Stripe Webhook] Error handling ${event.type}:`, error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 };
