@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -25,6 +21,8 @@ model Restaurant {
   orders         Order[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  @@index([slug])
 }
 
 model MenuCategory {
@@ -35,6 +33,8 @@ model MenuCategory {
   products     Product[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  @@index([restaurantId])
 }
 
 model Product {
@@ -51,20 +51,35 @@ model Product {
   menuCategoryId String
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  @@index([restaurantId])
+  @@index([menuCategoryId])
+  @@index([price])
 }
 
 model Order {
   id                Int               @id @default(autoincrement())
   total             Float
-  status            OrderStatus
+  status            OrderStatus       @default(PENDING)
   consumptionMethod ConsumptionMethod
   restaurant        Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId      String
   orderProducts     OrderProduct[]
   customerName      String
   customerCpf       String
+  
+  // 🔑 Campos Stripe para integração de pagamento
+  stripeSessionId   String?           @unique
+  stripePaymentId   String?           @unique
+  paymentIntents    PaymentIntent[]
+  
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
+
+  @@index([status])
+  @@index([restaurantId])
+  @@index([stripeSessionId])
+  @@index([createdAt])
 }
 
 model OrderProduct {
@@ -74,18 +89,53 @@ model OrderProduct {
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId   Int
   quantity  Int
-  price     Float
+  price     Float    // Preço no momento da compra (snapshot)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// 🆕 Modelo para rastrear tentativas de pagamento
+model PaymentIntent {
+  id                String   @id @default(uuid())
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId           Int
+  stripePaymentId   String   @unique
+  amount            Float    // Valor em reais
+  currency          String   @default("BRL")
+  status            PaymentStatus
+  failureReason     String?  // Motivo da falha, se houver
+  failureCode       String?  // Código de erro do Stripe
+  attemptNumber     Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([stripePaymentId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 enum OrderStatus {
-  PENDING
-  IN_PREPARATION
-  PAYMENT_CONFIRMED
-  PAYMENT_FAILED
-  FINISHED
-  CANCELLED
+  PENDING             
+  PAYMENT_PROCESSING   // Stripe processando
+  PAYMENT_CONFIRMED    // Pagamento aprovado
+  PAYMENT_FAILED       // Pagamento rejeitado
+  IN_PREPARATION       // Na cozinha
+  READY_FOR_PICKUP     // Pronto para retirada (TAKEAWAY)
+  SERVED               // Entregue ao cliente (DINE_IN)
+  CANCELLED            // Cancelado pelo cliente
+  REFUNDED 
+}
+
+enum PaymentStatus {
+  PENDING              // Aguardando resposta do Stripe
+  SUCCEEDED            // Pagamento bem-sucedido
+  FAILED               // Pagamento falhou
+  CANCELLED            // Pagamento cancelado
+  EXPIRED              // Sessão expirou
 }
 
 enum ConsumptionMethod {
