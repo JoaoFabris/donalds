@@ -89,6 +89,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           slug,
           consumptionMethod,
           orderId: order.id,
+          customerCpf: data.cpf
         });
         const stripe = await loadStripe(
           process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!,
