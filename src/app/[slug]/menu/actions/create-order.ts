@@ -50,9 +50,11 @@ export const createOrder = async (input: CreateOrderInput) => {
           data: productsWithPricesAndQuantities,
         },
       },
-      total: productsWithPricesAndQuantities.reduce(
-        (acc, product) => acc + product.price * product.quantity,
-        0,
+      total: Math.round(
+        productsWithPricesAndQuantities.reduce(
+          (acc, product) => acc + Number(product.price) * product.quantity,
+          0,
+        ),
       ),
       consumptionMethod: input.consumptionMethod,
       restaurantId: restaurant.id,
