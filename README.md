@@ -1,37 +1,153 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍔 Donalds — Food Ordering App
 
-## Getting Started
+Aplicação web de pedidos em restaurantes com QR Code, desenvolvida com **Next.js 15**, **Prisma**, **Stripe** e **Tailwind CSS**.
 
-First, run the development server:
+---
+
+## 📋 Visão Geral
+
+O **Donalds** é um sistema de pedidos para restaurantes acessado via QR Code. O cliente escaneia o código na mesa ou no balcão, escolhe entre consumo no local ou retirada, navega pelo cardápio, adiciona itens ao carrinho e finaliza o pagamento diretamente pelo celular — sem precisar instalar nenhum app.
+
+---
+
+## ✨ Funcionalidades
+
+- Acesso via slug único por restaurante (`/[slug]`)
+- Seleção de método de consumo: **dine in** ou **takeaway**
+- Cardápio organizado por categorias com scroll horizontal
+- Página de detalhes do produto com controle de quantidade
+- Carrinho lateral com Sheet (Vaul/Radix UI)
+- Finalização de pedido com CPF do cliente
+- Integração com **Stripe Checkout** para pagamento
+- Webhook do Stripe para confirmar e atualizar status do pedido
+- Consulta de pedidos por CPF
+- Seed do banco de dados para popular restaurante de exemplo
+
+---
+
+## 🛠️ Stack Técnica
+
+| Camada | Tecnologias |
+|---|---|
+| **Framework** | Next.js 15 (App Router) |
+| **Linguagem** | TypeScript |
+| **ORM** | Prisma + PostgreSQL |
+| **Pagamento** | Stripe |
+| **UI** | Tailwind CSS, Radix UI, shadcn/ui, Lucide React |
+| **Formulários** | React Hook Form + Zod |
+| **Notificações** | Sonner |
+| **Animações** | tailwindcss-animate |
+
+---
+
+## 🚀 Como rodar localmente
+
+### Pré-requisitos
+
+- Node.js >= 18
+- PostgreSQL rodando localmente ou em nuvem
+- Conta no Stripe (para pagamentos)
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/JoaoFabris/donalds.git
+cd donalds
+```
+
+### 2. Instale as dependências
+
+```bash
+npm install
+```
+
+### 3. Configure as variáveis de ambiente
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+DATABASE_URL="postgresql://usuario:senha@localhost:5432/donalds"
+
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
+
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+### 4. Execute as migrations e o seed
+
+```bash
+npx prisma migrate dev
+npx prisma db seed
+```
+
+### 5. Inicie o servidor de desenvolvimento
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse: [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🪝 Configurando o Webhook do Stripe
 
-## Learn More
+Para testar o webhook localmente, instale o [Stripe CLI](https://stripe.com/docs/stripe-cli) e rode:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Copie o `whsec_...` gerado e cole em `STRIPE_WEBHOOK_SECRET` no seu `.env`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🗂️ Estrutura do Projeto
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/
+│   ├── [slug]/               # Páginas do restaurante (slug único)
+│   │   ├── page.tsx          # Seleção do método de consumo
+│   │   ├── menu/             # Cardápio e detalhes do produto
+│   │   │   ├── actions/      # Server Actions (criar pedido, checkout Stripe)
+│   │   │   ├── contexts/     # Contexto do carrinho
+│   │   │   └── [productId]/  # Página de detalhes do produto
+│   │   └── orders/           # Consulta de pedidos por CPF
+│   └── api/
+│       └── webhooks/stripe/  # Webhook para confirmação de pagamento
+├── components/ui/             # Componentes reutilizáveis (shadcn/ui)
+├── data/                      # Queries ao banco de dados
+├── helpers/                   # Funções utilitárias (CPF, moeda)
+└── lib/                       # Instância do Prisma e utils
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# donalds
+prisma/
+├── schema.prisma              # Modelagem do banco de dados
+├── seed.ts                    # Seed com restaurante de exemplo
+└── migrations/                # Histórico de migrations
+```
+
+---
+
+## 📦 Scripts disponíveis
+
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | Inicia o servidor de desenvolvimento |
+| `npm run build` | Gera o build de produção |
+| `npm run start` | Inicia o servidor em produção |
+| `npm run lint` | Roda o ESLint |
+| `npx prisma db seed` | Popula o banco com dados de exemplo |
+| `npx prisma studio` | Abre o Prisma Studio (GUI do banco) |
+
+---
+
+## 📄 Licença
+
+Este projeto foi desenvolvido para fins de aprendizado e portfólio.
+
+---
+
+Desenvolvido por [João Fabris](https://github.com/JoaoFabris) 🚀
